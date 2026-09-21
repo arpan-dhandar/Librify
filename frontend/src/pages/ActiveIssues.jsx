@@ -2,6 +2,23 @@ import { useEffect, useState } from 'react';
 import { Undo2 } from 'lucide-react';
 import axios from '../api/axios';
 
+// Backend replies { success, count, data: [...] }; also accepts a plain array.
+function extractList(resData, legacyKey) {
+  if (Array.isArray(resData)) return resData;
+  if (Array.isArray(resData?.data)) return resData.data;
+  if (Array.isArray(resData?.[legacyKey])) return resData[legacyKey];
+  return [];
+}
+
+// The API nests the title: issue -> bookCopy -> book -> title.
+function getBookTitle(r) {
+  return r.bookCopy?.book?.title ?? r.book?.title ?? r.bookTitle ?? '—';
+}
+
+function getMemberName(r) {
+  return r.member?.name ?? r.memberName ?? '—';
+}
+
 export default function ActiveIssues() {
   const [rows, setRows] = useState([]);
   const [status, setStatus] = useState('loading');
@@ -14,8 +31,7 @@ export default function ActiveIssues() {
     axios
       .get('/api/issues/active')
       .then((res) => {
-        const data = res.data;
-        setRows(Array.isArray(data) ? data : data?.issues ?? []);
+        setRows(extractList(res.data, 'issues'));
         setStatus('ready');
       })
       .catch((err) => {
@@ -52,7 +68,7 @@ export default function ActiveIssues() {
         <div className="card-title">Currently issued</div>
         <div className="card-sub">{status === 'ready' ? `${rows.length} out on loan` : ' '}</div>
 
-        {rowMsg && rowMsg.type === 'error' && <div className="inline-msg error">{rowMsg.text}</div>}
+        {rowMsg && <div className={`inline-msg ${rowMsg.type}`}>{rowMsg.text}</div>}
 
         {status === 'loading' && (
           <div className="state-block"><span className="spinner" /> &nbsp;Loading active issues&hellip;</div>
@@ -73,9 +89,9 @@ export default function ActiveIssues() {
               <tbody>
                 {rows.map((r) => {
                   const id = r._id || r.id;
-                  const bookTitle = r.book?.title ?? r.bookTitle ?? r.book ?? '—';
-                  const memberName = r.member?.name ?? r.memberName ?? r.member ?? '—';
-                  const issued = r.issueDate ?? r.issuedAt;
+                  const bookTitle = getBookTitle(r);
+                  const memberName = getMemberName(r);
+                  const issued = r.issueDate ?? r.issuedAt ?? r.createdAt;
                   const due = r.dueDate ?? r.due;
                   const overdue = due && new Date(due).getTime() < Date.now();
                   const isReturning = returningId === id;

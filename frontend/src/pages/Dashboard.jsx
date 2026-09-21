@@ -16,7 +16,8 @@ export default function Dashboard() {
       .get('/api/dashboard')
       .then((res) => {
         if (cancelled) return;
-        setData(res.data);
+        // Backend replies { success: true, data: { totalBooks, ... } }
+        setData(res.data?.data ?? res.data);
         setStatus('ready');
       })
       .catch((err) => {
@@ -30,10 +31,10 @@ export default function Dashboard() {
     };
   }, []);
 
-  const totalBooks = data?.totalBooks ?? data?.books ?? 0;
-  const totalMembers = data?.totalMembers ?? data?.members ?? 0;
-  const issued = data?.issued ?? data?.issuedBooks ?? data?.activeIssues ?? 0;
-  const overdue = data?.overdue ?? data?.overdueBooks ?? 0;
+  const totalBooks = data?.totalBooks ?? 0;
+  const totalMembers = data?.totalMembers ?? 0;
+  const issued = data?.currentlyIssued ?? 0;
+  const overdue = data?.overdueCount ?? 0;
 
   return (
     <div className="page-enter">

@@ -4,6 +4,14 @@ import axios from '../api/axios';
 
 const emptyForm = { title: '', author: '', isbn: '', totalCopies: '' };
 
+// Backend replies { success, count, data: [...] }; also accepts a plain array.
+function extractList(resData, legacyKey) {
+  if (Array.isArray(resData)) return resData;
+  if (Array.isArray(resData?.data)) return resData.data;
+  if (Array.isArray(resData?.[legacyKey])) return resData[legacyKey];
+  return [];
+}
+
 export default function Books() {
   const [books, setBooks] = useState([]);
   const [status, setStatus] = useState('loading');
@@ -17,8 +25,7 @@ export default function Books() {
     axios
       .get('/api/books')
       .then((res) => {
-        const data = res.data;
-        setBooks(Array.isArray(data) ? data : data?.books ?? []);
+        setBooks(extractList(res.data, 'books'));
         setStatus('ready');
       })
       .catch((err) => {

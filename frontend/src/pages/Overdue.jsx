@@ -1,10 +1,27 @@
 import { useEffect, useState } from 'react';
 import axios from '../api/axios';
 
+// Backend replies { success, count, data: [...] }; also accepts a plain array.
+function extractList(resData, legacyKey) {
+  if (Array.isArray(resData)) return resData;
+  if (Array.isArray(resData?.data)) return resData.data;
+  if (Array.isArray(resData?.[legacyKey])) return resData[legacyKey];
+  return [];
+}
+
 function daysLate(dueDate) {
   if (!dueDate) return null;
   const diff = Date.now() - new Date(dueDate).getTime();
   return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+}
+
+// Handles both nested (issue -> bookCopy -> book) and flat shapes.
+function getBookTitle(r) {
+  return r.bookCopy?.book?.title ?? r.book?.title ?? r.bookTitle ?? '—';
+}
+
+function getMemberName(r) {
+  return r.member?.name ?? r.memberName ?? '—';
 }
 
 export default function Overdue() {
@@ -16,8 +33,7 @@ export default function Overdue() {
     axios
       .get('/api/overdue')
       .then((res) => {
-        const data = res.data;
-        setRows(Array.isArray(data) ? data : data?.overdue ?? []);
+        setRows(extractList(res.data, 'overdue'));
         setStatus('ready');
       })
       .catch((err) => {
@@ -56,14 +72,12 @@ export default function Overdue() {
               </thead>
               <tbody>
                 {rows.map((r) => {
-                  const bookTitle = r.book?.title ?? r.bookTitle ?? r.book ?? '—';
-                  const memberName = r.member?.name ?? r.memberName ?? r.member ?? '—';
                   const due = r.dueDate ?? r.due;
                   const late = r.daysOverdue ?? daysLate(due);
                   return (
                     <tr key={r._id || r.id}>
-                      <td className="strong">{bookTitle}</td>
-                      <td>{memberName}</td>
+                      <td className="strong">{getBookTitle(r)}</td>
+                      <td>{getMemberName(r)}</td>
                       <td>{due ? new Date(due).toLocaleDateString() : '—'}</td>
                       <td><span className="tag danger">{late ?? '—'} days</span></td>
                     </tr>

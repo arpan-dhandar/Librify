@@ -8,6 +8,15 @@ function todayPlus(days) {
   return d.toISOString().slice(0, 10);
 }
 
+// The backend replies with { success, count, data: [...] }.
+// This pulls the array out of that wrapper (and still accepts a plain array).
+function extractList(resData, legacyKey) {
+  if (Array.isArray(resData)) return resData;
+  if (Array.isArray(resData?.data)) return resData.data;
+  if (Array.isArray(resData?.[legacyKey])) return resData[legacyKey];
+  return [];
+}
+
 export default function IssueBook() {
   const [books, setBooks] = useState([]);
   const [members, setMembers] = useState([]);
@@ -23,10 +32,8 @@ export default function IssueBook() {
   useEffect(() => {
     Promise.all([axios.get('/api/books'), axios.get('/api/members')])
       .then(([booksRes, membersRes]) => {
-        const b = booksRes.data;
-        const m = membersRes.data;
-        setBooks(Array.isArray(b) ? b : b?.books ?? []);
-        setMembers(Array.isArray(m) ? m : m?.members ?? []);
+        setBooks(extractList(booksRes.data, 'books'));
+        setMembers(extractList(membersRes.data, 'members'));
       })
       .catch((err) => setLoadError(err.response?.data?.message || err.message));
   }, []);
@@ -93,7 +100,14 @@ export default function IssueBook() {
 
           <div className="field">
             <label htmlFor="dueDate">Due date</label>
-            <input id="dueDate" type="date" value={dueDate} min={todayPlus(0)} onChange={(e) => setDueDate(e.target.value)} required />
+            <input
+              id="dueDate"
+              type="date"
+              value={dueDate}
+              min={todayPlus(0)}
+              onChange={(e) => setDueDate(e.target.value)}
+              required
+            />
           </div>
 
           <button type="submit" className="btn btn-primary" disabled={submitting || noData} style={{ justifySelf: 'start' }}>

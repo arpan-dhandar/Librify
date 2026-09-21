@@ -4,6 +4,14 @@ import axios from '../api/axios';
 
 const emptyForm = { name: '', email: '', phone: '' };
 
+// Backend replies { success, count, data: [...] }; also accepts a plain array.
+function extractList(resData, legacyKey) {
+  if (Array.isArray(resData)) return resData;
+  if (Array.isArray(resData?.data)) return resData.data;
+  if (Array.isArray(resData?.[legacyKey])) return resData[legacyKey];
+  return [];
+}
+
 export default function Members() {
   const [members, setMembers] = useState([]);
   const [status, setStatus] = useState('loading');
@@ -17,8 +25,7 @@ export default function Members() {
     axios
       .get('/api/members')
       .then((res) => {
-        const data = res.data;
-        setMembers(Array.isArray(data) ? data : data?.members ?? []);
+        setMembers(extractList(res.data, 'members'));
         setStatus('ready');
       })
       .catch((err) => {
@@ -104,14 +111,17 @@ export default function Members() {
                 <tr><th>Name</th><th>Email</th><th>Phone</th><th>Member since</th></tr>
               </thead>
               <tbody>
-                {members.map((m) => (
-                  <tr key={m._id || m.id}>
-                    <td className="strong">{m.name}</td>
-                    <td>{m.email}</td>
-                    <td>{m.phone}</td>
-                    <td>{m.createdAt ? new Date(m.createdAt).toLocaleDateString() : '—'}</td>
-                  </tr>
-                ))}
+                {members.map((m) => {
+                  const since = m.membershipDate ?? m.createdAt;
+                  return (
+                    <tr key={m._id || m.id}>
+                      <td className="strong">{m.name}</td>
+                      <td>{m.email}</td>
+                      <td>{m.phone}</td>
+                      <td>{since ? new Date(since).toLocaleDateString() : '—'}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
