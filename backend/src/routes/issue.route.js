@@ -76,4 +76,18 @@ router.put("/return/:issueId", async (req, res) => {
   }
 });
 
+// GET /api/issues/active - all books currently checked out
+router.get("/issues/active", async (req, res) => {
+  try {
+    const issues = await Issue.find({ returnDate: null })
+      .populate("member")
+      .populate({ path: "bookCopy", populate: { path: "book" } })
+      .sort({ dueDate: 1 });
+
+    res.json({ success: true, count: issues.length, data: issues });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 export default router;
