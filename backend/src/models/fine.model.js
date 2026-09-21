@@ -55,11 +55,10 @@ fineSchema.index({ issue: 1 });
 
 // ---- Middleware ----
 // "Trigger": when a fine's status flips to "paid", stamp paidDate automatically.
-fineSchema.pre("save", function (next) {
+fineSchema.pre("save", function () {
   if (this.isModified("status") && this.status === "paid" && !this.paidDate) {
     this.paidDate = new Date();
   }
-  next();
 });
 
 // ---- Instance methods ----

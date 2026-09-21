@@ -72,7 +72,7 @@ issueSchema.set("toObject", { virtuals: true });
 // =====================================================================
 // PRE-SAVE MIDDLEWARE ("trigger": BEFORE INSERT/UPDATE)
 // =====================================================================
-issueSchema.pre("save", function (next) {
+issueSchema.pre("save", function () {
   // Stash flags now, because `isNew`/`isModified` flip right after save()
   // resolves — the post hook needs to know what just happened.
   this.$locals.wasNew = this.isNew;
@@ -90,8 +90,6 @@ issueSchema.pre("save", function (next) {
   if (this.$locals.returnJustSet && this.status !== "returned") {
     this.status = "returned";
   }
-
-  next();
 });
 
 // =====================================================================
